@@ -7,17 +7,6 @@ const STUDIONET_RPC = "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
 const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16)}`;
 
-// Chain definition for GenLayer Studionet (required for transaction validation)
-const studionet = {
-    id: CHAIN_ID,
-    name: 'GenLayer Studionet',
-    nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 },
-    rpcUrls: {
-        default: { http: [STUDIONET_RPC] },
-        public: { http: [STUDIONET_RPC] },
-    },
-};
-
 // Replace this with your actual contract address after deployment in GenLayer Studio
 let CONTRACT_ADDRESS = localStorage.getItem('sentiment_oracle_address') || "0xdDCBB61f9D31b62603DDaA52cb5BaD05B18C359f";
 
@@ -88,20 +77,29 @@ async function switchNetwork() {
     }
 }
 
-function handleAccountConnected(addr) {
+async function handleAccountConnected(addr) {
     account = addr;
     connectBtn.innerText = `Connected: ${addr.substring(0, 6)}...${addr.substring(38)}`;
     statusDot.classList.replace('red', 'green');
     statusText.innerText = "Connected to Studionet";
 
-    // Initialize GenLayer Client with explicit chain definition to avoid chainId mismatches
-    client = createClient({
-        chain: studionet,
-        endpoint: STUDIONET_RPC,
-        account: addr,
-        provider: window.ethereum
-    });
-    console.log("GenLayer client initialized with Studionet chain:", client);
+    try {
+        // Initialize GenLayer Client without manual chain object to avoid BigInt errors
+        client = createClient({
+            endpoint: STUDIONET_RPC,
+            account: addr,
+            provider: window.ethereum
+        });
+
+        // Use the official SDK method to sync the wallet with Studionet
+        // This handles chainId validation and network switching safely
+        await client.connect("studionet");
+        console.log("GenLayer client connected to Studionet:", client);
+    } catch (err) {
+        console.error("Failed to connect client to Studionet:", err);
+        statusDot.classList.replace('green', 'red');
+        statusText.innerText = "Network Error";
+    }
 }
 
 // CONTRACT INTERACTION
