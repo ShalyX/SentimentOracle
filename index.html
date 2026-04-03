@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Oracle | GenLayer Tutorial</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Sentiment Oracle</h1>
+            <p class="subtitle">AI-Native Intelligent Contract on GenLayer</p>
+        </header>
+
+        <main>
+            <div id="connection-status" class="status-badge">
+                <span class="dot red"></span>
+                <span class="status-text">Disconnected</span>
+            </div>
+
+            <section class="input-section">
+                <label for="text-input">What's on your mind?</label>
+                <textarea id="text-input" placeholder="Enter text to analyze sentiment..." rows="4"></textarea>
+                <button id="analyze-btn" class="primary-btn">Analyze with AI</button>
+            </section>
+
+            <section id="result-section" class="result-section hidden">
+                <h3>Consensus Result</h3>
+                <div id="sentiment-display" class="sentiment-badge">---</div>
+                <p id="result-explanation">Validators are reaching consensus on the sentiment of your message.</p>
+            </section>
+
+            <section class="tutorial-info">
+                <h3>How it works</h3>
+                <ul>
+                    <li><strong>Intelligent Contract:</strong> Written in Python, running on GenLayer.</li>
+                    <li><strong>AI Validation:</strong> Multiple validators run LLMs on your input.</li>
+                    <li><strong>Equivalence Principle:</strong> Consensus is reached on the semantic "sentiment" (not just string match).</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer>
+            <button id="connect-wallet" class="secondary-btn">Connect Wallet</button>
+        </footer>
+    </div>
+
+    <!-- SDK and Logic -->
+    <script type="importmap">
+    {
+      "imports": {
+        "genlayer-js": "https://esm.sh/genlayer-js@0.21.3"
+      }
+    }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
