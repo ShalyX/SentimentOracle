@@ -21,6 +21,32 @@ const studionet = {
 // Replace this with your actual contract address after deployment in GenLayer Studio
 let CONTRACT_ADDRESS = localStorage.getItem('sentiment_oracle_address') || "0xdDCBB61f9D31b62603DDaA52cb5BaD05B18C359f";
 
+// Contract ABI - REQUIRED for argument encoding
+const CONTRACT_ABI = [
+    {
+        type: "function",
+        name: "analyze_text",
+        inputs: [
+            { name: "text", type: "string" }
+        ],
+        outputs: [
+            { name: "", type: "string" }
+        ],
+        stateMutability: "nonpayable"
+    },
+    {
+        type: "function",
+        name: "get_sentiment",
+        inputs: [
+            { name: "text", type: "string" }
+        ],
+        outputs: [
+            { name: "", type: "string" }
+        ],
+        stateMutability: "view"
+    }
+];
+
 let client = null;
 let account = null;
 
@@ -144,11 +170,12 @@ async function analyzeSentiment() {
         resultExplanation.innerText = "Transaction submitted. Waiting for AI consensus...";
 
         // Calling 'analyze_text' (Write method)
-        // We provide explicit types and BigInt constructor for maximum stability
+        // Pass ABI so SDK knows how to encode the string argument
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS.trim(),
+            abi: CONTRACT_ABI,
             functionName: "analyze_text",
-            args: [String(text)]
+            args: [text]
         });
 
         console.log("Transaction Hash:", txHash);
@@ -206,6 +233,7 @@ async function fetchResult(text, receipt = null) {
         // ── Layer 2: Standard readContract view call ──────────────────────────
         const result = await client.readContract({
             address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
             functionName: "get_sentiment",
             args: [text]
         });
