@@ -169,11 +169,14 @@ async function analyzeSentiment() {
 
         // Calling 'analyze_text' (Write method)
         // Pass ABI so SDK knows how to encode the string argument
+        // We also provide explicit gas and gasPrice to bypass the BigInt estimation crash
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS.trim(),
             abi: CONTRACT_ABI,
             functionName: "analyze_text",
-            args: [text]
+            args: [text],
+            gas: BigInt(1000000),
+            gasPrice: BigInt(0)
         });
 
         console.log("Transaction Hash:", txHash);
