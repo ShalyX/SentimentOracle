@@ -7,6 +7,17 @@ const STUDIONET_RPC = "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
 const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16)}`;
 
+// Chain definition for GenLayer Studionet (required for transaction validation)
+const studionet = {
+    id: CHAIN_ID,
+    name: 'GenLayer Studionet',
+    nativeCurrency: { name: 'GEN', symbol: 'GEN', decimals: 18 },
+    rpcUrls: {
+        default: { http: [STUDIONET_RPC] },
+        public: { http: [STUDIONET_RPC] },
+    },
+};
+
 // Replace this with your actual contract address after deployment in GenLayer Studio
 let CONTRACT_ADDRESS = localStorage.getItem('sentiment_oracle_address') || "0xdDCBB61f9D31b62603DDaA52cb5BaD05B18C359f";
 
@@ -83,13 +94,14 @@ function handleAccountConnected(addr) {
     statusDot.classList.replace('red', 'green');
     statusText.innerText = "Connected to Studionet";
 
-    // Initialize GenLayer Client — endpoint + provider only (no chain: avoids RPC conflicts)
+    // Initialize GenLayer Client with explicit chain definition to avoid chainId mismatches
     client = createClient({
+        chain: studionet,
         endpoint: STUDIONET_RPC,
         account: addr,
         provider: window.ethereum
     });
-    console.log("GenLayer client initialized:", client);
+    console.log("GenLayer client initialized with Studionet chain:", client);
 }
 
 // CONTRACT INTERACTION
@@ -113,6 +125,13 @@ async function analyzeSentiment() {
         } else {
             return;
         }
+    }
+
+    // Pre-flight check: Ensure wallet is still on Studionet
+    const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (currentChainId !== CHAIN_ID_HEX) {
+        console.warn("Chain mismatch detected before transaction. Attempting switch...");
+        await switchNetwork();
     }
 
     try {
