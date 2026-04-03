@@ -118,8 +118,8 @@ async function analyzeSentiment() {
     }
 
     if (CONTRACT_ADDRESS.includes("YOUR_CONTRACT_ADDRESS") || !CONTRACT_ADDRESS.startsWith('0x') || CONTRACT_ADDRESS.length !== 42) {
-        const newAddr = prompt("Please enter a valid deployed contract address (starting with 0x):", 
-                             CONTRACT_ADDRESS.startsWith('0x') ? CONTRACT_ADDRESS : "");
+        const newAddr = prompt("Please enter a valid deployed contract address (starting with 0x):",
+            CONTRACT_ADDRESS.startsWith('0x') ? CONTRACT_ADDRESS : "");
         if (newAddr && newAddr.startsWith('0x') && newAddr.length === 42) {
             CONTRACT_ADDRESS = newAddr;
             localStorage.setItem('sentiment_oracle_address', newAddr);
@@ -148,9 +148,7 @@ async function analyzeSentiment() {
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS.trim(),
             functionName: "analyze_text",
-            args: [String(text)],
-            gas: BigInt(1000000),
-            gasPrice: BigInt(0)
+            args: [String(text)]
         });
 
         console.log("Transaction Hash:", txHash);
