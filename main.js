@@ -117,12 +117,14 @@ async function analyzeSentiment() {
         return;
     }
 
-    if (CONTRACT_ADDRESS.includes("YOUR_CONTRACT_ADDRESS")) {
-        const newAddr = prompt("Please enter the deployed SentimentOracle contract address:");
-        if (newAddr) {
+    if (CONTRACT_ADDRESS.includes("YOUR_CONTRACT_ADDRESS") || !CONTRACT_ADDRESS.startsWith('0x') || CONTRACT_ADDRESS.length !== 42) {
+        const newAddr = prompt("Please enter a valid deployed contract address (starting with 0x):", 
+                             CONTRACT_ADDRESS.startsWith('0x') ? CONTRACT_ADDRESS : "");
+        if (newAddr && newAddr.startsWith('0x') && newAddr.length === 42) {
             CONTRACT_ADDRESS = newAddr;
             localStorage.setItem('sentiment_oracle_address', newAddr);
         } else {
+            alert("Invalid contract address format. Please provide a full 42-character hex address.");
             return;
         }
     }
@@ -142,13 +144,13 @@ async function analyzeSentiment() {
         resultExplanation.innerText = "Transaction submitted. Waiting for AI consensus...";
 
         // Calling 'analyze_text' (Write method)
-        // We provide explicit gas and gasPrice to bypass the BigInt estimation crash
+        // We provide explicit types and BigInt constructor for maximum stability
         const txHash = await client.writeContract({
-            address: CONTRACT_ADDRESS,
+            address: CONTRACT_ADDRESS.trim(),
             functionName: "analyze_text",
-            args: [text],
-            gas: 1000000n,
-            gasPrice: 0n
+            args: [String(text)],
+            gas: BigInt(1000000),
+            gasPrice: BigInt(0)
         });
 
         console.log("Transaction Hash:", txHash);
