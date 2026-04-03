@@ -142,10 +142,13 @@ async function analyzeSentiment() {
         resultExplanation.innerText = "Transaction submitted. Waiting for AI consensus...";
 
         // Calling 'analyze_text' (Write method)
+        // We provide explicit gas and gasPrice to bypass the BigInt estimation crash
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS,
             functionName: "analyze_text",
-            args: [text]
+            args: [text],
+            gas: 1000000n,
+            gasPrice: 0n
         });
 
         console.log("Transaction Hash:", txHash);
