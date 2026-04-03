@@ -29,9 +29,7 @@ const CONTRACT_ABI = [
         inputs: [
             { name: "text", type: "string" }
         ],
-        outputs: [
-            { name: "", type: "string" }
-        ],
+        outputs: [],
         stateMutability: "nonpayable"
     },
     {
