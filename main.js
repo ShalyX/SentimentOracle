@@ -1,6 +1,5 @@
 // GenLayer Tutorial: Sentiment Oracle Frontend Logic
-// Standard implementation using genlayer-js and client.connect("studionet")
-import { createClient } from 'genlayer-js';
+import { createClient, studionet } from 'genlayer-js';
 
 // CONFIGURATION
 const STUDIONET_RPC = "https://studio.genlayer.com/api";
@@ -68,16 +67,15 @@ async function handleAccountConnected(addr) {
     connectBtn.innerText = `Connected: ${addr.substring(0, 6)}...${addr.substring(38)}`;
     
     try {
-        // Initialize GenLayer Client
+        // Initialize GenLayer Client using standardized chain from SDK
         client = createClient({
+            chain: studionet,
             endpoint: STUDIONET_RPC,
             account: addr,
             provider: window.ethereum
         });
 
         // CRITICAL: Synchronize the wallet with the Studionet network.
-        // This method handles the network switch/add automatically and
-        // populates the client with the required chain metadata to avoid BigInt errors.
         await client.connect("studionet");
         
         statusDot.classList.replace('red', 'green');
@@ -102,10 +100,11 @@ async function analyzeSentiment() {
         return;
     }
 
-    // Logic to handle contract address updates
-    if (CONTRACT_ADDRESS.includes("YOUR_CONTRACT_ADDRESS") || !CONTRACT_ADDRESS.startsWith('0x')) {
-        const newAddr = prompt("Please enter the deployed SentimentOracle contract address:");
-        if (newAddr && newAddr.startsWith('0x')) {
+    // Strict validation of contract address
+    const cleanAddr = CONTRACT_ADDRESS.trim();
+    if (!cleanAddr.startsWith('0x') || cleanAddr.length !== 42) {
+        const newAddr = prompt("Please enter a valid deployed contract address:");
+        if (newAddr && newAddr.startsWith('0x') && newAddr.length === 42) {
             CONTRACT_ADDRESS = newAddr;
             localStorage.setItem('sentiment_oracle_address', newAddr);
         } else {
@@ -121,13 +120,14 @@ async function analyzeSentiment() {
         resultExplanation.innerText = "Transaction submitted. Waiting for AI consensus...";
 
         // Calling 'analyze_text' (Write method)
-        // By using client.connect("studionet") above, the client now has 
-        // the chain metadata needed to build this transaction without BigInt errors.
+        // Optimized for Studionet: bypass automatic gas estimation using fixed gasLimit
+        // Using explicit BigUint64 constructor as BigInt for maximum compatibility
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS.trim(),
             abi: CONTRACT_ABI,
             functionName: "analyze_text",
-            args: [text]
+            args: [text],
+            gasLimit: BigInt(10000000)
         });
 
         console.log("Transaction Hash:", txHash);
