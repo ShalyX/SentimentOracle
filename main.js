@@ -1,16 +1,16 @@
 // GenLayer Tutorial: Sentiment Oracle Frontend Logic
-// Using genlayer-js SDK
+// Standard implementation using genlayer-js and client.connect("studionet")
 import { createClient } from 'genlayer-js';
 
 // CONFIGURATION
 const STUDIONET_RPC = "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
-const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16)}`;
+const CHAIN_ID_HEX = "0xf22f";
 
-// Replace this with your actual contract address after deployment in GenLayer Studio
-let CONTRACT_ADDRESS = localStorage.getItem('sentiment_oracle_address') || "0xdDCBB61f9D31b62603DDaA52cb5BaD05B18C359f";
+// This is the contract address from your deployment
+let CONTRACT_ADDRESS = localStorage.getItem('sentiment_oracle_address') || "0x718B8074d6735e5d16E8e285a73047a066316277";
 
-// Contract ABI - Required for stable encoding in viem
+// Contract ABI - Essential for argument encoding in viem/genlayer-js
 const CONTRACT_ABI = [
     {
         type: "function",
@@ -42,7 +42,6 @@ const resultSection = document.getElementById('result-section');
 const sentimentDisplay = document.getElementById('sentiment-display');
 const resultExplanation = document.getElementById('result-explanation');
 
-// INITIALIZATION
 async function init() {
     if (typeof window.ethereum === 'undefined') {
         alert("Please install MetaMask to use this tutorial!");
@@ -51,14 +50,14 @@ async function init() {
 
     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
     if (accounts.length > 0) {
-        await handleAccountConnected(accounts[0]);
+        handleAccountConnected(accounts[0]);
     }
 }
 
 async function connectWallet() {
     try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        await handleAccountConnected(accounts[0]);
+        handleAccountConnected(accounts[0]);
     } catch (error) {
         console.error("Connection failed:", error);
     }
@@ -67,9 +66,7 @@ async function connectWallet() {
 async function handleAccountConnected(addr) {
     account = addr;
     connectBtn.innerText = `Connected: ${addr.substring(0, 6)}...${addr.substring(38)}`;
-    statusDot.classList.replace('red', 'green');
-    statusText.innerText = "Connected to Studionet";
-
+    
     try {
         // Initialize GenLayer Client
         client = createClient({
@@ -78,13 +75,18 @@ async function handleAccountConnected(addr) {
             provider: window.ethereum
         });
 
-        // Sync with Studionet - this adds/switches the network automatically
+        // CRITICAL: Synchronize the wallet with the Studionet network.
+        // This method handles the network switch/add automatically and
+        // populates the client with the required chain metadata to avoid BigInt errors.
         await client.connect("studionet");
-        console.log("GenLayer client synchronized with Studionet");
+        
+        statusDot.classList.replace('red', 'green');
+        statusText.innerText = "Connected to Studionet";
+        console.log("GenLayer client connected to Studionet");
     } catch (err) {
         console.error("Failed to connect client:", err);
         statusDot.classList.replace('green', 'red');
-        statusText.innerText = "Network Error";
+        statusText.innerText = "Network Error - Switch to Studionet";
     }
 }
 
@@ -100,11 +102,10 @@ async function analyzeSentiment() {
         return;
     }
 
-    // Strict validation of contract address
-    const cleanAddr = CONTRACT_ADDRESS.trim();
-    if (cleanAddr.includes("YOUR_CONTRACT_ADDRESS") || !cleanAddr.startsWith('0x') || cleanAddr.length !== 42) {
-        const newAddr = prompt("Please enter a valid deployed contract address:");
-        if (newAddr && newAddr.startsWith('0x') && newAddr.length === 42) {
+    // Logic to handle contract address updates
+    if (CONTRACT_ADDRESS.includes("YOUR_CONTRACT_ADDRESS") || !CONTRACT_ADDRESS.startsWith('0x')) {
+        const newAddr = prompt("Please enter the deployed SentimentOracle contract address:");
+        if (newAddr && newAddr.startsWith('0x')) {
             CONTRACT_ADDRESS = newAddr;
             localStorage.setItem('sentiment_oracle_address', newAddr);
         } else {
@@ -120,14 +121,13 @@ async function analyzeSentiment() {
         resultExplanation.innerText = "Transaction submitted. Waiting for AI consensus...";
 
         // Calling 'analyze_text' (Write method)
-        // Explicitly providing gas and gasPrice to avoid estimation errors on Studionet
+        // By using client.connect("studionet") above, the client now has 
+        // the chain metadata needed to build this transaction without BigInt errors.
         const txHash = await client.writeContract({
             address: CONTRACT_ADDRESS.trim(),
             abi: CONTRACT_ABI,
             functionName: "analyze_text",
-            args: [text],
-            gas: BigInt(1000000),
-            gasPrice: BigInt(0)
+            args: [text]
         });
 
         console.log("Transaction Hash:", txHash);
@@ -150,8 +150,7 @@ async function analyzeSentiment() {
 
         if (error.message?.includes("not ACCEPTED") || error.message?.includes("UNDETERMINED")) {
             sentimentDisplay.innerText = "NO CONSENSUS";
-            sentimentDisplay.style.color = "#f59e0b";
-            resultExplanation.innerText = "⚠️ Validators couldn't agree on a sentiment. Try shorter text.";
+            resultExplanation.innerText = "⚠️ Validators couldn't agree. Try shorter text.";
         } else {
             sentimentDisplay.innerText = "ERROR";
             resultExplanation.innerText = error.message;
@@ -163,7 +162,7 @@ async function fetchResult(text, receipt = null) {
     try {
         sentimentDisplay.innerText = "PROCESSING...";
 
-        // Extraction from receipt consensus data
+        // Optimization: Try extracting result from consensus data in the receipt
         if (receipt?.consensus_data?.leader_receipt) {
             const receiptStr = JSON.stringify(receipt.consensus_data.leader_receipt);
             const found = ['POSITIVE', 'NEGATIVE', 'NEUTRAL'].find(s => receiptStr.includes(s));
@@ -173,7 +172,7 @@ async function fetchResult(text, receipt = null) {
             }
         }
 
-        // Fallback to readContract view call
+        // Standard poll via readContract
         const result = await client.readContract({
             address: CONTRACT_ADDRESS,
             abi: CONTRACT_ABI,
